@@ -9,6 +9,7 @@ we have troubles in some buggy codes while solving problems.
 from json import loads
 from time import sleep
 
+from matplotlib.pyplot import figure, savefig, show, subplots
 from pandas import DataFrame, read_html
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
@@ -27,24 +28,22 @@ class Scoreboard:
         size: (int) The columns we need to initialize a student's score.
     """
 
-    def __init__(self, *problems):
+    def __init__(self, problems, debug=False):
         self.problems = problems
-        self.scoreboard = DataFrame(columns=problems+["Total"])
-        self.crawler = Crawler()
+        self.scoreboard = DataFrame(columns=problems + ["Total"])
+        self.scoreboard.index.name = "Student_ID"
+        self.crawler = Crawler(headless=(not debug))
         self.size = len(problems)
 
     def update(self):
         """Update scoreboard using web crawler.
 
-        Since crawler can return a html string, we can parse it to pandas
-        then update each student's score.
+        Since crawler can return a Dataframe, we can use it to update scoreboard.
         """
         for problem_id in self.problems:
-            source = self.crawler.get_accept_submit(problem_id)
+            accept_table = self.crawler.get_accept_submit(problem_id)
 
-            accept_table = read_html(source, converters={'Submitter': str})[0]
-
-            for student_id in set(*zip(*accept_table[["Submitter"]].values)):
+            for student_id in set(accept_table.values.flatten()):
                 try:
                     student = self.scoreboard.loc[student_id]
                 except KeyError:
@@ -53,14 +52,38 @@ class Scoreboard:
                     student = self.scoreboard.loc[student_id]
                 student[problem_id] = "AC"
                 student["Total"] += 1
-        self.scoreboard.sort_values(by=["Total"])
+        self.scoreboard.sort_values(
+            by=["Total", "Student_ID"], inplace=True, ascending=[False, True])
 
-    def __str__(self):
+    def visualize(self, filename=None):
         """
-        This is just a simple debug printer.
-        TODO: pretty print
+        Make scoreboard picture using matplotlib
+
+        Args:
+            filename: (str) A image like filename, the picture will show on screen
+                      if filename is not given.
         """
-        return str(self.scoreboard)
+        scoreboard = self.scoreboard.drop(columns=["Total"])
+        color = scoreboard.copy()
+
+        n_rows, n_columns = len(scoreboard) + 1, len(scoreboard.columns) + 1
+
+        _, graph = subplots(figsize=(n_columns * 0.2 + 1.5, n_rows * 0.2))
+
+        color[color == "AC"] = "#00FF00"
+        color[color == "Unsolved"] = "#FF0000"
+
+        graph.axis('off')
+
+        graph.table(loc='center', cellLoc="center", rowLoc="center",
+                    colWidths=[0.2]*n_columns, cellColours=color.values,
+                    cellText=scoreboard.values, colLabels=scoreboard.columns,
+                    rowLabels=scoreboard.index)
+
+        if filename is None:
+            show()
+        else:
+            savefig(filename)
 
 
 class Crawler:
@@ -76,6 +99,7 @@ class Crawler:
         if headless:
             option.add_argument('headless')
         self.driver = Chrome(options=option)
+        self.url = "https://oj.nctu.me/groups/11/submissions/?count=10000&page=1&problem_id={}&verdict_id=10"
         self.set_cookies()
 
     def set_cookies(self):
@@ -98,23 +122,29 @@ class Crawler:
             problem_id: (int) The id of the problem we are looking at.
 
         Returns:
-            (str) A html source string.
+            (Dataframe) A Dataframe consist a column of student id.
         """
-        self.driver.get(
-            "https://oj.nctu.me/groups/11/submissions\
-            / ?count=10000&page=1&problem_id={}&verdict_id=10".format(problem_id))
+        self.driver.get(self.url.format(problem_id))
 
         WebDriverWait(self.driver, 10, 0.5).until(
             EC.presence_of_element_located((By.CLASS_NAME, "table-responsive")))
-        sleep(10)
-        return self.driver.page_source
+
+        accept = read_html(self.driver.page_source, converters={
+                           'Submitter': str})[0][["Submitter"]]
+
+        while accept.isnull().values.any():
+            sleep(1)
+            accept = read_html(self.driver.page_source, converters={
+                'Submitter': str})[0][["Submitter"]]
+
+        return accept
 
 
 def main():
     """Main function here."""
-    scoreboard = Scoreboard(819, 820, 822, 823, 825, 826, 829, 830)
+    scoreboard = Scoreboard([819, 820, 822, 823, 825, 826, 829, 830])
     scoreboard.update()
-    print(scoreboard)
+    scoreboard.visualize("scoreboard.png")
 
 
 if __name__ == "__main__":
