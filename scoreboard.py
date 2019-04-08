@@ -6,10 +6,11 @@ we have troubles in some buggy codes while solving problems.
 
 """
 
+from configparser import ConfigParser
 from json import loads
 from time import sleep
 
-from matplotlib.pyplot import figure, savefig, show, subplots
+from matplotlib.pyplot import savefig, show, subplots
 from pandas import DataFrame, read_html
 from selenium.webdriver import Chrome, ChromeOptions
 from selenium.webdriver.common.by import By
@@ -50,12 +51,14 @@ class Scoreboard:
                     self.scoreboard.loc[student_id] = [
                         "Unsolved"] * self.size + [0]
                     student = self.scoreboard.loc[student_id]
+
                 student[problem_id] = "AC"
                 student["Total"] += 1
+
         self.scoreboard.sort_values(
             by=["Total", "Student_ID"], inplace=True, ascending=[False, True])
 
-    def visualize(self, filename=None):
+    def visualize(self, filename):
         """
         Make scoreboard picture using matplotlib
 
@@ -66,21 +69,19 @@ class Scoreboard:
         scoreboard = self.scoreboard.drop(columns=["Total"])
         color = scoreboard.copy()
 
-        n_rows, n_columns = len(scoreboard) + 1, len(scoreboard.columns) + 1
-
-        _, graph = subplots(figsize=(n_columns * 0.2 + 1.5, n_rows * 0.2))
-
         color[color == "AC"] = "#00FF00"
         color[color == "Unsolved"] = "#FF0000"
 
+        n_rows, n_columns = len(scoreboard) + 1, len(scoreboard.columns) + 1
+        _, graph = subplots(figsize=(n_columns * 3, n_rows * 0.2))
         graph.axis('off')
 
-        graph.table(loc='center', cellLoc="center", rowLoc="center",
-                    colWidths=[0.2]*n_columns, cellColours=color.values,
+        graph.table(loc="upper left", cellLoc="center", rowLoc="center",
+                    cellColours=color.values,
                     cellText=scoreboard.values, colLabels=scoreboard.columns,
                     rowLabels=scoreboard.index)
 
-        if filename is None:
+        if filename == "no":
             show()
         else:
             savefig(filename)
@@ -130,22 +131,24 @@ class Crawler:
             EC.presence_of_element_located((By.CLASS_NAME, "table-responsive")))
 
         accept = read_html(self.driver.page_source, converters={
-                           'Submitter': str})[0][["Submitter"]]
+            'Submitter': str})[0][["Submitter"]]
 
         while accept.isnull().values.any():
             sleep(1)
             accept = read_html(self.driver.page_source, converters={
                 'Submitter': str})[0][["Submitter"]]
 
-        return accept
+        return accept[accept["Submitter"].str.match(r"(\d){7}")]
 
 
-def main():
+def main(config):
     """Main function here."""
-    scoreboard = Scoreboard([819, 820, 822, 823, 825, 826, 829, 830])
+    scoreboard = Scoreboard([int(x) for x in config["problems"].split()], config["debug"] == "yes")
     scoreboard.update()
-    scoreboard.visualize("scoreboard.png")
+    scoreboard.visualize(config["picture_filename"])
 
 
 if __name__ == "__main__":
-    main()
+    CONFIG = ConfigParser()
+    CONFIG.read("settings.ini")
+    main(CONFIG["DEFAULT"])
