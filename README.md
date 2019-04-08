@@ -1,4 +1,4 @@
-﻿﻿# Scoreboard for NCTU OJ
+# Scoreboard for NCTU OJ
 
 ## Requirements
 - Python 3
