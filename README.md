@@ -18,13 +18,14 @@
 ## Settings
 ### You can edit settings in settings.ini
 
-#### If set picture_filename to no, the scoreboard will display on screen
-#### Not recommend for lagre dara, it may cause serious lag.
-- picture_filename = scoreboard.png
+#### Set path of where html generates.
+- web_page = scoreboard.html
+#### Unused now for faster update in future.
+- data = data.pkl
 #### If set debug to yes, chrome will not work in headless mode.
 - debug = no
 #### Seperate each problem id by space.
-- problems = 819 820 822 823 825 826 829 830
+- problems = 819 820 822 823 825 826 829 830 843 844
 
 ## Known issues
 - The picture size may larger than the table, I don't know how to let it fit properly.
