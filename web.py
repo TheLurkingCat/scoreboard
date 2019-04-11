@@ -51,6 +51,6 @@ def homepage():
 if __name__ == '__main__':
     APP.debug = False
     try:
-        APP.run(host='0.0.0.0', port=int(environ['PORT']), ssl_context='adhoc')
+        APP.run(host='0.0.0.0', port=int(environ['PORT']))
     except KeyError:
         APP.run()
