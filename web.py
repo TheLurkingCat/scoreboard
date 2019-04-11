@@ -20,7 +20,8 @@ def visualize():
         token = request.cookies.get('token')
 
     if token == None:
-        abort(403)
+        redirect('/', code=302)
+
     try:
         scoreboard = Scoreboard(token, problems)
     except TypeError:
