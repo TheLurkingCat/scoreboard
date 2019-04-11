@@ -22,12 +22,12 @@ def visualize():
         token = request.cookies.get('token')
 
     if token == None:
-        return redirect('/', code=302)
+        return render_template('index.html')
 
     try:
         scoreboard = Scoreboard(token, problems)
     except TypeError:
-        return redirect('/', code=302)
+        return render_template('index.html')
 
     scoreboard.update()
     response = make_response(scoreboard.visualize())
@@ -36,9 +36,8 @@ def visualize():
     return response
 
 
-@APP.route('/', methods=['GET'])
+@APP.route('/index', methods=['GET'])
 def homepage():
-
     if request.cookies.get('token') is not None:
         return redirect('/scoreboard', code=302)
     return render_template('index.html')
