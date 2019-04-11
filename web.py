@@ -27,7 +27,7 @@ def visualize():
     try:
         scoreboard = Scoreboard(token, problems)
     except TypeError:
-        abort(401)
+        redirect('/', code=302)
 
     scoreboard.update()
     response = make_response(scoreboard.visualize())
