@@ -1,4 +1,3 @@
 *.json
 *.log
-*.html
 /__pycache__
