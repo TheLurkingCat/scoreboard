@@ -1,12 +1,14 @@
 from os import environ
 
 from flask import (Flask, abort, make_response, redirect, render_template,
-                   request)
+                   request, url_for)
+from flask_sslify import SSLify
 from pymongo import MongoClient
 
 from scoreboard import Scoreboard
 
 APP = Flask(__name__)
+SSLIFY = SSLify(APP)
 
 
 @APP.route('/scoreboard', methods=['GET', 'POST'])
@@ -43,6 +45,7 @@ def homepage():
 
 
 if __name__ == '__main__':
+    APP.debug = False
     try:
         APP.run(host='0.0.0.0', port=int(environ['PORT']))
     except KeyError:
