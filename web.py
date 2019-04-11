@@ -9,6 +9,7 @@ from scoreboard import Scoreboard
 
 APP = Flask(__name__)
 sslify = SSLify(APP)
+APP.config.update(dict(PREFERRED_URL_SCHEME='https'))
 
 
 @APP.route('/scoreboard', methods=['GET', 'POST'])
@@ -39,7 +40,7 @@ def visualize():
 @APP.route('/index', methods=['GET'])
 def homepage():
     if request.cookies.get('token') is not None:
-        return redirect('/scoreboard', code=302)
+        return redirect(url_for('/scoreboard'), code=302)
     return render_template('index.html')
 
 
