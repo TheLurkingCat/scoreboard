@@ -2,13 +2,11 @@ from os import environ
 
 from flask import (Flask, abort, make_response, redirect, render_template,
                    request, url_for)
-from flask_sslify import SSLify
 from pymongo import MongoClient
 
 from scoreboard import Scoreboard
 
 APP = Flask(__name__)
-SSLIFY = SSLify(APP)
 
 
 @APP.route('/scoreboard', methods=['GET', 'POST'])
@@ -36,6 +34,12 @@ def visualize():
     return response
 
 
+@APP.before_request
+def force_https():
+    if request.endpoint in APP.view_functions and not request.is_secure:
+        return redirect(request.url.replace('http://', 'https://'))
+
+
 @APP.route('/', methods=['GET'])
 def homepage():
 
@@ -47,6 +51,6 @@ def homepage():
 if __name__ == '__main__':
     APP.debug = False
     try:
-        APP.run(host='0.0.0.0', port=int(environ['PORT']))
+        APP.run(host='0.0.0.0', port=int(environ['PORT']), ssl_context='adhoc')
     except KeyError:
         APP.run()
