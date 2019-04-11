@@ -2,11 +2,13 @@ from os import environ
 
 from flask import (Flask, abort, make_response, redirect, render_template,
                    request, url_for)
+from flask_sslify import SSLify
 from pymongo import MongoClient
 
 from scoreboard import Scoreboard
 
 APP = Flask(__name__)
+sslify = SSLify(APP)
 
 
 @APP.route('/scoreboard', methods=['GET', 'POST'])
@@ -32,12 +34,6 @@ def visualize():
     if request.cookies.get('token') is None:
         response.set_cookie('token', token)
     return response
-
-
-@APP.before_request
-def force_https():
-    if request.endpoint in APP.view_functions and not request.is_secure:
-        return redirect(request.url.replace('http://', 'https://'))
 
 
 @APP.route('/', methods=['GET'])
