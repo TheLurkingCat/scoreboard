@@ -40,7 +40,7 @@ def visualize():
 @APP.route('/index', methods=['GET'])
 def homepage():
     if request.cookies.get('token') is not None:
-        return redirect(url_for('/scoreboard'), code=302)
+        return redirect(url_for('scoreboard'), code=302)
     return render_template('index.html')
 
 
