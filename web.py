@@ -22,12 +22,12 @@ def visualize():
         token = request.cookies.get('token')
 
     if token == None:
-        redirect('/', code=302)
+        return redirect('/', code=302)
 
     try:
         scoreboard = Scoreboard(token, problems)
     except TypeError:
-        redirect('/', code=302)
+        return redirect('/', code=302)
 
     scoreboard.update()
     response = make_response(scoreboard.visualize())
