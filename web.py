@@ -11,16 +11,16 @@ APP = Flask(__name__)
 
 @APP.route('/scoreboard', methods=['GET', 'POST'])
 def visualize():
-    url = 'mongodb+srv://FOJ_problem:VUzKFBG9UanMJ5o1@meow-jzx99.mongodb.net/meow'
-    problems = MongoClient(url).FOJ.problems.find_one()['problems']
-
     if request.cookies.get('token') is None:
         token = request.form.get('token')
     else:
         token = request.cookies.get('token')
 
     if token == None:
-        return redirect(url_for('homepage', _external=True,  _scheme='https'), code=302)
+        return redirect(url_for('homepage', _external=True, _scheme='https'), code=302)
+
+    url = 'mongodb+srv://FOJ_problem:VUzKFBG9UanMJ5o1@meow-jzx99.mongodb.net/meow'
+    problems = MongoClient(url).FOJ.problems.find_one()['problems']
 
     try:
         scoreboard = Scoreboard(token, problems)

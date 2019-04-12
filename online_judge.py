@@ -47,13 +47,15 @@ class Online_Judge:
         submission_code = 'submissions/?group_id=11&problem_id={}&count=1048576'
         url = self.api + submission_code.format(problem_id)
         data = loads(get(url, cookies=self.cookies).text)['msg']['submissions']
+        data.reverse()
         table = defaultdict(Counter)
         for submission in data:
             try:
-                if table[self.user[submission['user_id']]]['verdict'] != 10 or 3 < submission['verdict_id'] < 10:
-                    table[self.user[submission['user_id']]]['penalty'] += 1
-                table[self.user[submission['user_id']]]['verdict'] = max(
-                    table[self.user[submission['user_id']]]['verdict'], submission['verdict_id'])
+                if 3 < submission['verdict_id'] < 11:
+                    if table[self.user[submission['user_id']]]['verdict'] != 10:
+                        table[self.user[submission['user_id']]]['penalty'] += 1
+                    table[self.user[submission['user_id']]]['verdict'] = max(
+                        table[self.user[submission['user_id']]]['verdict'], submission['verdict_id'])
             except KeyError:
                 pass
 
