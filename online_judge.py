@@ -4,7 +4,7 @@ LICENSE: MIT license
 This module is made to interact with FOJ api.
 
 '''
-from collections import defaultdict
+from collections import Counter, defaultdict
 from json import loads
 from re import match
 
@@ -47,12 +47,13 @@ class Online_Judge:
         submission_code = 'submissions/?group_id=11&problem_id={}&count=1048576'
         url = self.api + submission_code.format(problem_id)
         data = loads(get(url, cookies=self.cookies).text)['msg']['submissions']
-        table = defaultdict(int)
-
+        table = defaultdict(Counter)
         for submission in data:
             try:
-                table[self.user[submission['user_id']]] = max(
-                    submission['verdict_id'], table[self.user[submission['user_id']]])
+                if table[self.user[submission['user_id']]]['verdict'] != 10 or 3 < submission['verdict_id'] < 10:
+                    table[self.user[submission['user_id']]]['penalty'] += 1
+                table[self.user[submission['user_id']]]['verdict'] = max(
+                    table[self.user[submission['user_id']]]['verdict'], submission['verdict_id'])
             except KeyError:
                 pass
 

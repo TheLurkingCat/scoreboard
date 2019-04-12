@@ -8,7 +8,7 @@ from pymongo import MongoClient
 from scoreboard import Scoreboard
 
 APP = Flask(__name__)
-sslify = SSLify(APP)
+# sslify = SSLify(APP)
 
 
 @APP.route('/scoreboard', methods=['GET', 'POST'])
@@ -22,17 +22,17 @@ def visualize():
         token = request.cookies.get('token')
 
     if token == None:
-        return render_template('index.html')
+        return redirect(url_for('homepage', _external=True,  _scheme='https'), code=302)
 
     try:
         scoreboard = Scoreboard(token, problems)
     except TypeError:
-        return render_template('index.html')
+        return redirect(url_for('homepage', _external=True,  _scheme='https'), code=302)
 
     scoreboard.update()
     response = make_response(scoreboard.visualize())
-    if request.cookies.get('token') is None:
-        response.set_cookie('token', token)
+    response.set_cookie('token', token, max_age=365*86400)
+
     return response
 
 
@@ -44,7 +44,6 @@ def homepage():
 
 
 if __name__ == '__main__':
-    APP.debug = False
     try:
         APP.run(host='0.0.0.0', port=int(environ['PORT']))
     except KeyError:

@@ -30,19 +30,24 @@ class Scoreboard:
         Since api return a json mas, we can use it to update scoreboard.
 
         '''
-        temp = {}
+        def make_verdict_string(x):
+            verdict = {4: 'CE', 5: 'RE', 6: 'MLE',
+                       7: 'TLE', 8: 'OLE', 9: 'WA', 10: 'AC'}
+            if x == x:
+                return '<span title="Attempted: {}">{}</span>'.format(x['penalty'], verdict[x['verdict']])
+            else:
+                return '<span title="Not Attempt">N/A</span>'
 
-        verdict = {4: 'CE', 5: 'RE', 6: 'MLE',
-                   7: 'TLE', 8: 'OLE', 9: 'WA', 10: 'AC'}
-
+        temp = dict()
         for problem_id in self.problems:
             temp[problem_id] = self.online_judge.get_submission(problem_id)
 
-        self.scoreboard = DataFrame.from_dict(temp).applymap(
-            lambda x: verdict[x] if x == x else 'N/A')
+        self.scoreboard = DataFrame.from_dict(
+            temp).applymap(make_verdict_string)
 
         self.scoreboard.index.name = 'Student_ID'
-        self.scoreboard['Total'] = (self.scoreboard == 'AC').sum(axis=1)
+        self.scoreboard['Total'] = self.scoreboard.applymap(
+            lambda x: x.endswith('AC</span>')).sum(axis=1)
         self.scoreboard.sort_values(
             by=['Total', 'Student_ID'], inplace=True, ascending=[False, True])
 
@@ -54,21 +59,18 @@ class Scoreboard:
             (str) A html page to be rendered.
         '''
 
-        def hightlight(scoreboard):
-            color_list = []
-            for submission in scoreboard:
-                if submission == 'AC':
-                    color_list.append('background-color: green')
-                elif submission == 'N/A':
-                    color_list.append('background-color: gray')
-                else:
-                    color_list.append('background-color: red')
-            return color_list
+        def hightlight(submission):
+            if submission.endswith('AC</span>'):
+                return 'background-color: green'
+            elif submission.endswith('N/A</span>'):
+                return 'background-color: gray'
+            else:
+                return 'background-color: red'
 
         scoreboard = self.scoreboard.drop(columns=['Total'])
         scoreboard.index.name = ''
 
         scoreboard = scoreboard.style.set_properties(
-            **{'width': '50px', 'text-align': 'center'})
+            **{'width': '60px', 'text-align': 'center'})
 
-        return scoreboard.apply(hightlight).render()
+        return scoreboard.applymap(hightlight).render()
