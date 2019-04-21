@@ -20,10 +20,12 @@ def visualize():
         return redirect(url_for('homepage', _external=True, _scheme='https'), code=302)
 
     url = 'mongodb+srv://FOJ_problem:VUzKFBG9UanMJ5o1@meow-jzx99.mongodb.net/meow'
-    problems = MongoClient(url).FOJ.problems.find_one()['problems']
+    database = MongoClient(url).FOJ
+    problems = database.problems.find_one()['problems']
+    problem_name = database.problem_name.find_one()
 
     try:
-        scoreboard = Scoreboard(token, problems)
+        scoreboard = Scoreboard(token, problems, problem_name)
     except TypeError:
         return redirect(url_for('homepage', _external=True,  _scheme='https'), code=302)
 
@@ -39,6 +41,11 @@ def homepage():
     if request.cookies.get('token') is not None:
         return redirect(url_for('visualize', _external=True,  _scheme='https'), code=302)
     return render_template('index.html')
+
+
+@APP.route('/', methods=['GET'])
+def redirect_homepage():
+    return redirect(url_for('homepage', _external=True,  _scheme='https'), code=301)
 
 
 if __name__ == '__main__':

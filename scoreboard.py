@@ -20,8 +20,9 @@ class Scoreboard:
         online_judge: (Online_Judge) An FOJ api wrapper.
     '''
 
-    def __init__(self, token, problems):
+    def __init__(self, token, problems, problem_name):
         self.problems = problems
+        self.problem_name = problem_name
         self.online_judge = Online_Judge(token)
         self.scoreboard = DataFrame()
 
@@ -69,7 +70,8 @@ class Scoreboard:
 
         scoreboard = self.scoreboard.drop(columns=['Total'])
         scoreboard.index.name = ''
-
+        scoreboard.rename(lambda x: '<span title="{}">{}</span>'.format(self.problem_name[str(x)], x),
+                          axis='columns', inplace=True)
         scoreboard = scoreboard.style.set_properties(
             **{'width': '60px', 'text-align': 'center'})
 
