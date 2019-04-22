@@ -28,27 +28,17 @@ class Scoreboard:
 
     def update(self):
         '''Update scoreboard using web crawler.
-        Since api return a json mas, we can use it to update scoreboard.
+        Since api return a json message, we can use it to update scoreboard.
 
         '''
-        def make_verdict_string(x):
-            verdict = {4: 'CE', 5: 'RE', 6: 'MLE',
-                       7: 'TLE', 8: 'OLE', 9: 'WA', 10: 'AC'}
-            if x == x:
-                return '<span title="Attempted: {}">{}</span>'.format(x['penalty'], verdict[x['verdict']])
-            else:
-                return '<span title="Not Attempt">N/A</span>'
-
         temp = dict()
         for problem_id in self.problems:
             temp[problem_id] = self.online_judge.get_submission(problem_id)
 
-        self.scoreboard = DataFrame.from_dict(
-            temp).applymap(make_verdict_string)
-
+        self.scoreboard = DataFrame.from_dict(temp)
         self.scoreboard.index.name = 'Student_ID'
         self.scoreboard['Total'] = self.scoreboard.applymap(
-            lambda x: x.endswith('AC</span>')).sum(axis=1)
+            lambda x: x == x and x['verdict'] == 10).sum(axis=1)
         self.scoreboard.sort_values(
             by=['Total', 'Student_ID'], inplace=True, ascending=[False, True])
 
@@ -59,6 +49,13 @@ class Scoreboard:
         Returns:
             (str) A html page to be rendered.
         '''
+        def make_verdict_string(x):
+            verdict = {4: 'CE', 5: 'RE', 6: 'MLE',
+                       7: 'TLE', 8: 'OLE', 9: 'WA', 10: 'AC'}
+            if x == x:
+                return '<span title="Attempted: {}">{}</span>'.format(x['penalty'], verdict[x['verdict']])
+            else:
+                return '<span title="Not Attempt">N/A</span>'
 
         def hightlight(submission):
             if submission.endswith('AC</span>'):
@@ -68,8 +65,9 @@ class Scoreboard:
             else:
                 return 'background-color: red'
 
-        scoreboard = self.scoreboard.drop(columns=['Total'])
-        scoreboard.index.name = ''
+        scoreboard = self.scoreboard.drop(columns=['Total']).applymap(
+            make_verdict_string)
+        scoreboard.index.name = None
         scoreboard.rename(lambda x: '<span title="{}">{}</span>'.format(self.problem_name[str(x)], x),
                           axis='columns', inplace=True)
         scoreboard = scoreboard.style.set_properties(
