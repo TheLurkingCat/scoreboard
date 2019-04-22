@@ -30,7 +30,8 @@ def visualize():
         return redirect(url_for('homepage', _external=True,  _scheme='https'), code=302)
 
     scoreboard.update()
-    response = make_response(scoreboard.visualize())
+    css = '<style type="text/css">html,body{margin:0;padding:0;height:100%;width:100%;}.row_heading{width:70px;}</style>'
+    response = make_response(css+scoreboard.visualize())
     response.set_cookie('token', token, max_age=365*86400)
 
     return response
