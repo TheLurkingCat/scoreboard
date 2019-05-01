@@ -1,4 +1,5 @@
 from os import environ
+from time import time
 
 from flask import (Flask, abort, make_response, redirect, render_template,
                    request, url_for)
@@ -25,8 +26,7 @@ def visualize():
         return redirect(url_for('homepage', _external=True, _scheme='https'), code=302)
 
     scoreboard.update()
-    css = '<style type="text/css">html,body{margin:0;padding:0;height:100%;width:100%;}.row_heading{width:70px;}</style>'
-    response = make_response(css + scoreboard.visualize())
+    response = make_response(scoreboard.visualize())
     response.set_cookie('token', token, max_age=365 * 86400)
 
     return response

@@ -7,11 +7,12 @@ we have troubles in some buggy codes while solving problems.
 '''
 from asyncio import gather, get_event_loop
 
-from pandas import DataFrame
+from pandas import DataFrame, set_option
 
 from online_judge import Online_Judge
 
 loop = get_event_loop()
+set_option('display.max_colwidth', -1)
 
 
 class Scoreboard:
@@ -65,24 +66,40 @@ class Scoreboard:
             verdict = {4: 'CE', 5: 'RE', 6: 'MLE',
                        7: 'TLE', 8: 'OLE', 9: 'WA', 10: 'AC'}
             if x == x:
-                return '<span title="Attempted: {}">{}</span>'.format(x['penalty'], verdict[x['verdict']])
+                return '<span class="{}" title="Attempted: {}">{}</span>'.format("right" if x['verdict'] == 10 else "wrong", x['penalty'], verdict[x['verdict']])
             else:
-                return '<span title="Not Attempt">N/A</span>'
+                return '<span class="none" title="Not Attempt">N/A</span>'
 
-        def hightlight(submission):
-            if submission.endswith('AC</span>'):
-                return 'background-color: green'
-            elif submission.endswith('N/A</span>'):
-                return 'background-color: gray'
-            else:
-                return 'background-color: red'
+        css = """<style type="text/css">
+                html,body{
+                    margin:0;
+                    padding:0;
+                    height:100%;
+                    width:100%;
+                }
+                .row_heading {width:70px}
+                .wrong {background-color:red}
+                .right {background-color:green}
+                .none {background-color:gray}
+                span{
+                    text-align:center;
+                    display:block;
+                    width:60px;
+                }
+                th, td{
+                    text-align:center;
+                    width:60px;
+                }
+                a{
+                    text-decoration:none;
+                    color:black;
+                }
+                </style>
+            """
 
         scoreboard = self.scoreboard.drop(columns=['Total']).applymap(
             make_verdict_string)
         scoreboard.index.name = None
-        scoreboard.rename(lambda x: '<span title="{}">{}</span>'.format(self.problem_name[str(x)], x),
+        scoreboard.rename(lambda x: '<a href="https://oj.nctu.me/problems/{1}/" <span title="{0}">{1}</span></a>'.format(self.problem_name[str(x)], x),
                           axis='columns', inplace=True)
-        scoreboard = scoreboard.style.set_properties(
-            **{'width': '60px', 'text-align': 'center'})
-
-        return scoreboard.applymap(hightlight).render()
+        return css + scoreboard.to_html(border=0, max_cols=None, max_rows=None, escape=False)
