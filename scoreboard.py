@@ -5,9 +5,13 @@ This module can help us know about who can ask when
 we have troubles in some buggy codes while solving problems.
 
 '''
+from asyncio import gather, get_event_loop
+
 from pandas import DataFrame
 
 from online_judge import Online_Judge
+
+loop = get_event_loop()
 
 
 class Scoreboard:
@@ -31,9 +35,17 @@ class Scoreboard:
         Since api return a json message, we can use it to update scoreboard.
 
         '''
-        temp = dict()
+        tasks = []
+
+        async def crawl(problem_id):
+            return await loop.run_in_executor(None, self.online_judge.get_submission, problem_id)
+
         for problem_id in self.problems:
-            temp[problem_id] = self.online_judge.get_submission(problem_id)
+            task = loop.create_task(crawl(problem_id))
+            tasks.append(task)
+
+        temp = dict(
+            zip(self.problems, loop.run_until_complete(gather(*tasks))))
 
         self.scoreboard = DataFrame.from_dict(temp)
         self.scoreboard.index.name = 'Student_ID'

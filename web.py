@@ -6,51 +6,50 @@ from pymongo import MongoClient
 
 from scoreboard import Scoreboard
 
-APP = Flask(__name__)
+app = Flask(__name__)
 
 
-@APP.route('/scoreboard', methods=['GET', 'POST'])
+@app.route('/scoreboard', methods=['GET', 'POST'])
 def visualize():
     if request.cookies.get('token') is None:
         token = request.form.get('token')
     else:
         token = request.cookies.get('token')
 
-    if token == None:
+    if token is None:
         return redirect(url_for('homepage', _external=True, _scheme='https'), code=302)
-
-    url = 'mongodb+srv://FOJ_problem:VUzKFBG9UanMJ5o1@meow-jzx99.mongodb.net/meow'
-    database = MongoClient(url).FOJ
-    problems = database.problems.find_one()['problems']
-    problem_name = database.problem_name.find_one()
 
     try:
         scoreboard = Scoreboard(token, problems, problem_name)
     except TypeError:
-        return redirect(url_for('homepage', _external=True,  _scheme='https'), code=302)
+        return redirect(url_for('homepage', _external=True, _scheme='https'), code=302)
 
     scoreboard.update()
     css = '<style type="text/css">html,body{margin:0;padding:0;height:100%;width:100%;}.row_heading{width:70px;}</style>'
-    response = make_response(css+scoreboard.visualize())
-    response.set_cookie('token', token, max_age=365*86400)
+    response = make_response(css + scoreboard.visualize())
+    response.set_cookie('token', token, max_age=365 * 86400)
 
     return response
 
 
-@APP.route('/index', methods=['GET'])
+@app.route('/index', methods=['GET'])
 def homepage():
     if request.cookies.get('token') is not None:
         return redirect(url_for('visualize', _external=True,  _scheme='https'), code=302)
     return render_template('index.html')
 
 
-@APP.route('/', methods=['GET'])
+@app.route('/', methods=['GET'])
 def redirect_homepage():
     return redirect(url_for('homepage', _external=True,  _scheme='https'), code=301)
 
 
 if __name__ == '__main__':
+    url = 'mongodb+srv://FOJ_problem:VUzKFBG9UanMJ5o1@meow-jzx99.mongodb.net/meow'
+    database = MongoClient(url).FOJ
+    problems = database.problems.find_one()['problems']
+    problem_name = database.problem_name.find_one()
     try:
-        APP.run(host='0.0.0.0', port=int(environ['PORT']))
+        app.run(host='0.0.0.0', port=int(environ['PORT']))
     except KeyError:
-        APP.run()
+        app.run()
