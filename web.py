@@ -1,9 +1,8 @@
+from json import loads
 from os import environ
-from time import time
 
 from flask import (Flask, abort, make_response, redirect, render_template,
                    request, url_for)
-from pymongo import MongoClient
 
 from scoreboard import Scoreboard
 
@@ -45,11 +44,6 @@ def redirect_homepage():
 
 
 if __name__ == '__main__':
-    url = 'mongodb+srv://FOJ_problem:VUzKFBG9UanMJ5o1@meow-jzx99.mongodb.net/meow'
-    database = MongoClient(url).FOJ
-    problems = database.problems.find_one()['problems']
-    problem_name = database.problem_name.find_one()
-    try:
-        app.run(host='0.0.0.0', port=int(environ['PORT']))
-    except KeyError:
-        app.run()
+    problems = eval(environ['problem_ids'])
+    problem_name = loads(environ['problem_names'])
+    app.run(host='0.0.0.0', port=int(environ['PORT']))
