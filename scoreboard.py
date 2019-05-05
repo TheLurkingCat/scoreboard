@@ -100,6 +100,6 @@ class Scoreboard:
         scoreboard = self.scoreboard.drop(columns=['Total']).applymap(
             make_verdict_string)
         scoreboard.index.name = None
-        scoreboard.rename(lambda x: '<a href="https://oj.nctu.me/problems/{1}/" <span title="{0}">{1}</span></a>'.format(self.problem_name[str(x)], x),
+        scoreboard.rename(lambda x: '<a href="https://oj.nctu.me/problems/{1}/" target="_blank" <span title="{0}">{1}</span></a>'.format(self.problem_name[str(x)], x),
                           axis='columns', inplace=True)
         return css + scoreboard.to_html(border=0, max_cols=None, max_rows=None, escape=False)
