@@ -52,8 +52,10 @@ class Scoreboard:
         self.scoreboard.index.name = 'Student_ID'
         self.scoreboard['Total'] = self.scoreboard.applymap(
             lambda x: x == x and x['verdict'] == 10).sum(axis=1)
+        self.scoreboard['Penalty'] = self.scoreboard.applymap(
+            lambda x: x['penalty'] if isinstance(x, dict) and x['verdict'] == 10 else 0).sum(axis=1)
         self.scoreboard.sort_values(
-            by=['Total', 'Student_ID'], inplace=True, ascending=[False, True])
+            by=['Total', 'Penalty', 'Student_ID'], inplace=True, ascending=[False, True, True])
 
     def visualize(self):
         '''
@@ -97,9 +99,12 @@ class Scoreboard:
                 </style>
             """
 
-        scoreboard = self.scoreboard.drop(columns=['Total']).applymap(
+        scoreboard = self.scoreboard.drop(columns=['Total', 'Penalty']).applymap(
             make_verdict_string)
         scoreboard.index.name = None
+
+        scoreboard.index = scoreboard.index.map(
+            '<a href="https://oj.nctu.me/groups/11/submissions/?name={0}" target="_blank">{0}</a>'.format)
         scoreboard.rename(lambda x: '<a href="https://oj.nctu.me/problems/{1}/" target="_blank" <span title="{0}">{1}</span></a>'.format(self.problem_name[str(x)], x),
                           axis='columns', inplace=True)
         return css + scoreboard.to_html(border=0, max_cols=None, max_rows=None, escape=False)
