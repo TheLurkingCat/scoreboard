@@ -33,7 +33,8 @@ class Online_Judge:
         '''
         url = self.api + 'groups/11/users/'
         data = get(url, cookies=self.cookies).text
-        return {user['id']: user['name'] for user in loads(data)['msg'] if match(r'0(\d){6}', user['name'])}
+        teach_assistants = {"0756013", "0416066"}
+        return {user['id']: user['name'] for user in loads(data)['msg'] if match(r'0(\d){6}', user['name']) and user['name'] not in teach_assistants}
 
     def get_submission(self, problem_id):
         '''Fetch submission data using FOJ api.
