@@ -6,10 +6,14 @@
 ## Python package requirements
 - requests
 - pandas
-- flask
+
+## Configuration
+```bash=
+    cp app.config.sample app.config
+    vim app.config
+```
 
 ## Usage
 ```bash=
-    python web.py
+    python main.py
 ```
-You need token to access FOJ.

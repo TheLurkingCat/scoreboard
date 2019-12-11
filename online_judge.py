@@ -4,14 +4,15 @@ LICENSE: MIT license
 This module is made to interact with FOJ api.
 
 '''
+import json
+import re
 from collections import Counter, defaultdict
-from json import loads
-from re import match
+from configparser import ConfigParser
 
 from requests import get
 
 
-class Online_Judge:
+class OnlineJudge:
     '''Some wrapped functions to interact with FOJ api.
 
     Attributes:
@@ -19,11 +20,25 @@ class Online_Judge:
         cookies: (dict) You need token to access FOJ.
         user: (dict) An user_id to student_id mapping dictionary.
     '''
+    config = ConfigParser()
+    config.read('app.config')
+    api = 'https://api.oj.nctu.me/{}'
+    cookies = {'token': config['Authorize']['token']}
 
-    def __init__(self, token):
-        self.api = 'https://api.oj.nctu.me/'
-        self.cookies = {'token': token}
+    def __init__(self):
         self.user = self.get_user()
+
+    def get_data(self, url, params=None):
+        group_id = self.config['Config']['group']
+        if params is None:
+            data = json.loads(
+                get(url.format(group_id), cookies=self.cookies).text)
+        else:
+            params['group_id'] = group_id
+            data = json.loads(
+                get(url, cookies=self.cookies, params=params).text)
+        # TODO check response.
+        return data['msg']
 
     def get_user(self):
         '''Create an user_id to student_id mapping dictionary using api.
@@ -31,10 +46,24 @@ class Online_Judge:
         Returns:
             (dict) An user_id to student_id mapping dictionary.
         '''
-        url = self.api + 'groups/11/users/'
-        data = get(url, cookies=self.cookies).text
-        teach_assistants = {"0756013", "0416066"}
-        return {user['id']: user['name'] for user in loads(data)['msg'] if match(r'0(\d){6}', user['name']) and user['name'] not in teach_assistants}
+        data = self.get_data(self.api.format('groups/{}/users/'))
+        blacklist = self.config['Config']['blacklist'].split()
+        whitelist = re.compile(self.config['Config']['whitelist'])
+        return {user['id']: user['name']
+                for user in data
+                if whitelist.match(user['name']) and
+                user['name'] not in blacklist}
+
+    def get_problems(self):
+        data = self.get_data(self.api.format('groups/{}/problems/'))
+        excluded_problems = self.config['Config']['excluded_problems'].split()
+        title_mask = re.compile(self.config['Config']['extract_title_re'])
+        ret = {}
+        for problem in data['data']:
+            title = title_mask.match(problem['title'])
+            if problem['id'] not in excluded_problems and title is not None:
+                ret[problem['id']] = title.group(1)
+        return ret
 
     def get_submission(self, problem_id):
         '''Fetch submission data using FOJ api.
@@ -45,9 +74,12 @@ class Online_Judge:
         Returns:
             (defaultdict): The submission state of the problem_id.
         '''
-        submission_code = 'submissions/?group_id=11&problem_id={}&count=1048576'
-        url = self.api + submission_code.format(problem_id)
-        data = loads(get(url, cookies=self.cookies).text)['msg']['submissions']
+        params = {'group_id': None,
+                  'problem_id': problem_id,
+                  'count': '1048576'}
+        url = self.api.format('submissions/')
+        data = self.get_data(url, params)['submissions']
+        return data
         data.reverse()
         table = defaultdict(Counter)
         for submission in data:
@@ -61,3 +93,8 @@ class Online_Judge:
                 pass
 
         return table
+
+
+if __name__ == '__main__':
+    oj = OnlineJudge()
+    print(oj.get_submission(1018))
