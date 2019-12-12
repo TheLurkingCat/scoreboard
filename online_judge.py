@@ -9,6 +9,7 @@ import re
 from collections import Counter, defaultdict
 from configparser import ConfigParser
 
+import pandas as pd
 from requests import get
 
 
@@ -72,29 +73,17 @@ class OnlineJudge:
             problem_id: (int) Id of the problem you want to fetch.
 
         Returns:
-            (defaultdict): The submission state of the problem_id.
+            (DataFrame): Users who passed the problem.
         '''
         params = {'group_id': None,
                   'problem_id': problem_id,
                   'count': '1048576'}
         url = self.api.format('submissions/')
         data = self.get_data(url, params)['submissions']
-        return data
-        data.reverse()
-        table = defaultdict(Counter)
+        table = pd.DataFrame(columns=[problem_id], dtype='bool')
         for submission in data:
-            try:
-                if 3 < submission['verdict_id'] < 11:
-                    if table[self.user[submission['user_id']]]['verdict'] != 10:
-                        table[self.user[submission['user_id']]]['penalty'] += 1
-                    table[self.user[submission['user_id']]]['verdict'] = max(
-                        table[self.user[submission['user_id']]]['verdict'], submission['verdict_id'])
-            except KeyError:
-                pass
-
+            if submission['verdict_id'] == 10:
+                name = self.user.get(submission['user_id'], None)
+                if name is not None:
+                    table.loc[name, problem_id] = True
         return table
-
-
-if __name__ == '__main__':
-    oj = OnlineJudge()
-    print(oj.get_submission(1018))

@@ -2,12 +2,19 @@
 # Copy you token from your browser's cookie of api.oj.nctu.me
 token =
 
+
 [Config]
 # Group id
-group = 12
+group = 0
+
 # List of excluded username
-blacklist = 0712345 0612345 0512345
+blacklist = 0512345 0612345 0712345
+
 # Use regular expression, set to .* to include all
 whitelist = 0(\d){6}
+
 # Id of excluded problems
 excluded_problems = 123 456 789
+
+# Regular expression to select title
+extract_title_re = (.*)

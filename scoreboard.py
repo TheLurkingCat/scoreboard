@@ -6,10 +6,11 @@ we have troubles in some buggy codes while solving problems.
 
 '''
 from asyncio import gather, get_event_loop
+from functools import reduce
 
-from pandas import DataFrame, set_option
+from pandas import DataFrame, merge, set_option
 
-from online_judge import Online_Judge
+from online_judge import OnlineJudge
 
 loop = get_event_loop()
 set_option('display.max_colwidth', -1)
@@ -25,10 +26,8 @@ class Scoreboard:
         online_judge: (Online_Judge) An FOJ api wrapper.
     '''
 
-    def __init__(self, token, problems, problem_name):
-        self.problems = problems
-        self.problem_name = problem_name
-        self.online_judge = Online_Judge(token)
+    def __init__(self):
+        self.oj = OnlineJudge()
         self.scoreboard = DataFrame()
 
     def update(self):
@@ -37,17 +36,20 @@ class Scoreboard:
 
         '''
         tasks = []
+        problems = self.oj.get_problems().keys()
 
         async def crawl(problem_id):
-            return await loop.run_in_executor(None, self.online_judge.get_submission, problem_id)
+            return await loop.run_in_executor(None, self.oj.get_submission, problem_id)
 
-        for problem_id in self.problems:
+        for problem_id in problems:
             task = loop.create_task(crawl(problem_id))
             tasks.append(task)
 
-        temp = dict(
-            zip(self.problems, loop.run_until_complete(gather(*tasks))))
-
+        df_list = loop.run_until_complete(gather(*tasks))
+        score = reduce(lambda x, y: merge(x, y, left_index=True,
+                                          right_index=True, how='outer'), df_list)
+        score.fillna(False, inplace=True)
+        # TODO: change code below
         self.scoreboard = DataFrame.from_dict(temp)
         self.scoreboard.index.name = 'Student_ID'
         self.scoreboard['Total'] = self.scoreboard.applymap(
@@ -108,3 +110,8 @@ class Scoreboard:
         scoreboard.rename(lambda x: '<a href="https://oj.nctu.me/problems/{1}/" target="_blank" <span title="{0}">{1}</span></a>'.format(self.problem_name[str(x)], x),
                           axis='columns', inplace=True)
         return css + scoreboard.to_html(border=0, max_cols=None, max_rows=None, escape=False)
+
+
+if __name__ == '__main__':
+    sb = Scoreboard()
+    print(sb.update())
