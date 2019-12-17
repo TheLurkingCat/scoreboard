@@ -8,7 +8,8 @@ we have troubles in some buggy codes while solving problems.
 from asyncio import gather, get_event_loop
 from functools import reduce
 
-from pandas import DataFrame, merge, set_option
+from flask import render_template
+from pandas import merge, set_option
 
 from online_judge import OnlineJudge
 
@@ -28,7 +29,7 @@ class Scoreboard:
 
     def __init__(self):
         self.oj = OnlineJudge()
-        self.scoreboard = DataFrame()
+        self.scoreboard = None
 
     def update(self):
         '''Update scoreboard using web crawler.
@@ -46,18 +47,19 @@ class Scoreboard:
             tasks.append(task)
 
         df_list = loop.run_until_complete(gather(*tasks))
-        score = reduce(lambda x, y: merge(x, y, left_index=True,
-                                          right_index=True, how='outer'), df_list)
-        score.fillna(False, inplace=True)
+        self.scoreboard = reduce(lambda x, y: merge(x, y, left_index=True,
+                                                    right_index=True, how='outer'), df_list)
+        self.scoreboard.fillna(False, inplace=True)
         # TODO: change code below
-        self.scoreboard = DataFrame.from_dict(temp)
         self.scoreboard.index.name = 'Student_ID'
-        self.scoreboard['Total'] = self.scoreboard.applymap(
-            lambda x: x == x and x['verdict'] == 10).sum(axis=1)
-        self.scoreboard['Penalty'] = self.scoreboard.applymap(
-            lambda x: x['penalty'] if isinstance(x, dict) and x['verdict'] == 10 else 0).sum(axis=1)
-        self.scoreboard.sort_values(
-            by=['Total', 'Penalty', 'Student_ID'], inplace=True, ascending=[False, True, True])
+        self.scoreboard['Total'] = self.scoreboard.sum(axis=1)
+        self.scoreboard.sort_values(by=['Total', 'Student_ID'],
+                                    inplace=True,
+                                    ascending=[False, True])
+        self.scoreboard.drop(columns='Total', inplace=True)
+        self.scoreboard.index.name = None
+
+        return self.scoreboard.applymap(lambda x: 'done' if x else 'clear').to_html(border=0, max_cols=None, max_rows=None, escape=False)
 
     def visualize(self):
         '''
@@ -66,52 +68,48 @@ class Scoreboard:
         Returns:
             (str) A html page to be rendered.
         '''
-        def make_verdict_string(x):
-            verdict = {4: 'CE', 5: 'RE', 6: 'MLE',
-                       7: 'TLE', 8: 'OLE', 9: 'WA', 10: 'AC'}
-            if x == x:
-                return '<span class="{}" title="Attempted: {}">{}</span>'.format("right" if x['verdict'] == 10 else "wrong", x['penalty'], verdict[x['verdict']])
-            else:
-                return '<span class="none" title="Not Attempt">N/A</span>'
-
-        css = """<style type="text/css">
-                html,body{
-                    margin:0;
-                    padding:0;
-                    height:100%;
-                    width:100%;
-                }
-                .row_heading {width:70px}
-                .wrong {background-color:red}
-                .right {background-color:green}
-                .none {background-color:gray}
-                span{
-                    text-align:center;
-                    display:block;
-                    width:60px;
-                }
-                th, td{
-                    text-align:center;
-                    width:60px;
-                }
-                a{
-                    text-decoration:none;
-                    color:black;
-                }
-                </style>
-            """
-
-        scoreboard = self.scoreboard.drop(columns=['Total', 'Penalty']).applymap(
-            make_verdict_string)
-        scoreboard.index.name = None
-
-        scoreboard.index = scoreboard.index.map(
-            '<a href="https://oj.nctu.me/groups/11/submissions/?name={0}" target="_blank">{0}</a>'.format)
-        scoreboard.rename(lambda x: '<a href="https://oj.nctu.me/problems/{1}/" target="_blank" <span title="{0}">{1}</span></a>'.format(self.problem_name[str(x)], x),
-                          axis='columns', inplace=True)
-        return css + scoreboard.to_html(border=0, max_cols=None, max_rows=None, escape=False)
 
 
 if __name__ == '__main__':
+    css = """
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
+      <script>
+        $(function () {
+            $('td').each(function(i, v){
+                if (v.textContent === "done"){
+                    v.bgColor = "#D4EDC9"
+                }else{
+                    v.bgColor = "#FFE3E3"
+                }
+            })
+            $('thead > tr > th').each(function(i, v){
+                v.onclick = function(){window.open("https://oj.nctu.me/problems/" + v.textContent + "/", "_blank")}
+            })
+        })
+      </script>
+
+<style>
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+    }
+
+    th,
+    td {
+        text-align: center;
+        width: 60px;
+    }
+
+    td{
+        font-family: 'Material Icons'
+    }
+</style>
+"""
     sb = Scoreboard()
-    print(sb.update())
+    with open('D:/1.html', 'w') as f:
+        f.write(css + sb.update())
