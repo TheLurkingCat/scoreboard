@@ -27,7 +27,24 @@ class OnlineJudge:
     cookies = {'token': config['Authorize']['token']}
 
     def __init__(self):
-        self.user = self.get_user()
+        if self.validate():
+            self.user = self.get_user()
+        else:
+            raise ValueError('Invalid authorization')
+
+    def validate(self):
+        group_id = self.config['Config']['group']
+        url = self.api.format('groups/{}/users/'.format(group_id))
+        response = get(url.format(group_id), cookies=self.cookies)
+        data = json.loads(response.text)['msg']
+        if data == 'Permission Denied.':
+            print(data)
+            return False
+        print('Authorized')
+        self.config.set('Authorize', 'token', response.cookies['token'][1:-1])
+        with open('app.config', 'w') as cfg:
+            self.config.write(cfg)
+        return True
 
     def get_data(self, url, params=None):
         group_id = self.config['Config']['group']
@@ -38,8 +55,14 @@ class OnlineJudge:
             params['group_id'] = group_id
             data = json.loads(
                 get(url, cookies=self.cookies, params=params).text)
-        # TODO check response.
         return data['msg']
+
+    def get_last_submission(self, count):
+        params = {'group_id': None,
+                  'count': count}
+        url = self.api.format('submissions/')
+        data = self.get_data(url, params)['submissions']
+        return data
 
     def get_user(self):
         '''Create an user_id to student_id mapping dictionary using api.
@@ -80,10 +103,19 @@ class OnlineJudge:
                   'count': '1048576'}
         url = self.api.format('submissions/')
         data = self.get_data(url, params)['submissions']
-        table = pd.DataFrame(columns=[problem_id], dtype='bool')
+        table = pd.DataFrame(columns=[problem_id], dtype='int8')
         for submission in data:
-            if submission['verdict_id'] == 10:
+            if submission['verdict_id'] > 4:
                 name = self.user.get(submission['user_id'], None)
                 if name is not None:
-                    table.loc[name, problem_id] = True
+                    try:
+                        table.loc[name, problem_id] = max(
+                            table.loc[name, problem_id], submission['verdict_id'])
+                    except KeyError:
+                        table.loc[name, problem_id] = submission['verdict_id']
+
         return table
+
+
+if __name__ == '__main__':
+    oj = OnlineJudge()

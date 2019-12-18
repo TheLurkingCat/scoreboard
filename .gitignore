@@ -2,4 +2,5 @@
 *.log
 /__pycache__
 /tmp
+*.h5
 *.config

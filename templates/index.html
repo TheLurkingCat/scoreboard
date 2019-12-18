@@ -1,14 +1,74 @@
-<html lang="zh-tw">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<script>
+    $(function () {
+        $('td').each(function (i, v) {
+            if (v.textContent === "done") {
+                v.bgColor = "#D4EDC9"
+            } else if (v.textContent[0] === 'h') {
+                v.bgColor = "#E5E5E5"
+            } else {
+                v.bgColor = "#FFE3E3"
+            }
+        })
+        $('thead > tr > th').each(function (i, v) {
+            v.onclick = function () {
+                window.open("https://oj.nctu.me/problems/" + v.textContent + "/", "_blank")
+            }
+        })
+        $('tbody > tr > td').each(function (i, v) {
+            v.onclick = function () {
+                var p = v.parentNode.firstElementChild.textContent
+                var c = $('thead > tr > th').get(v.cellIndex).textContent
+                window.open("https://oj.nctu.me/groups/" + {{ group_id }} + "/submissions/?count=100000&name=" + p + "&problem_id=" + c, "_blank")
+    }
+        })
+    })
+</script>
 
-<head></head>
+<style>
+    html,
+    body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        width: 100vw;
+    }
 
-<body>
-    <form action="scoreboard" method="post">
-        輸入你的FOJ token: <br>
-        <input type="text" name='token'>
-        <input type="submit" value="送出">
-    </form>
-</body>
+    th,
+    td {
+        text-align: center;
+        min-width: 75px;
+        height: 75px;
+    }
 
-</html>
-<!DOCTYPE html>
+    table {
+        overflow-x: auto;
+    }
+
+    thead tr th {
+        position: sticky;
+        top: 0;
+        background-color: #DEC8FF;
+        z-index: 0;
+    }
+
+    thead tr th:first-child {
+        left: 0;
+        z-index: 1;
+    }
+
+    tbody tr th {
+        position: sticky;
+        left: 0;
+        background-color: #DEC8FF;
+        z-index: 0;
+    }
+
+    td {
+        font-family: 'Material Icons';
+        font-size: 28px;
+    }
+</style>
+
+{{render() | safe}}
