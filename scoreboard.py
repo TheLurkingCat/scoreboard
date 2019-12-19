@@ -74,11 +74,12 @@ def table_display():
             else:
                 left = mid + 1
             mid = (left + right) // 2
+        problems = oj.get_problems()
         for i in range(left):
             name = oj.user.get(temp[i]['user_id'], None)
             problem_id = temp[i]['problem_id']
             verdict = temp[i]['verdict_id']
-            if verdict > 4 and name is not None:
+            if verdict > 4 and name is not None and problems.get(problem_id, None) is not None:
                 try:
                     scoreboard.loc[name, problem_id] = max(
                         scoreboard.loc[name, problem_id], verdict)
