@@ -10,6 +10,7 @@ from functools import reduce
 from os.path import isfile
 
 from flask import Flask, render_template
+from numpy import isnan, nan
 from pandas import HDFStore, Series, merge, set_option
 
 from online_judge import OnlineJudge
@@ -55,10 +56,12 @@ def table_display():
         with HDFStore('cache.h5') as store:
             last = store.get('last')[0]
             scoreboard = store.get('board')
+
         temp = oj.get_last_submission(8192)
         if temp[0]['id'] == last:
             print("Already up-to-date")
             return scoreboard
+
         if temp[-1]['id'] > last:
             print("Data too old, regenerating cache")
             generate()
@@ -74,29 +77,31 @@ def table_display():
             else:
                 left = mid + 1
             mid = (left + right) // 2
+
         problems = oj.get_problems()
+
         for i in range(left):
             name = oj.user.get(temp[i]['user_id'], None)
             problem_id = temp[i]['problem_id']
             verdict = temp[i]['verdict_id']
             if verdict > 4 and name is not None and problems.get(problem_id, None) is not None:
-                try:
-                    scoreboard.loc[name, problem_id] = max(
-                        scoreboard.loc[name, problem_id], verdict)
-                except KeyError:
-                    scoreboard.loc[name, problem_id] = verdict
+                if isnan(scoreboard[problem_id].get(name, nan)):
+                    scoreboard.at[name, problem_id] = verdict
+                else:
+                    scoreboard.at[name, problem_id] = max(
+                        scoreboard.at[name, problem_id], verdict)
+
+        scoreboard.sort_index(axis=1, inplace=True)
+
         print("Update completed, saving to cache.")
         with HDFStore('cache.h5', mode='w') as store:
             store.put('board', scoreboard)
             store.put('last', Series(temp[0]['id']))
         print("Update finished!")
+
         return scoreboard
 
     def render():
-        '''Update scoreboard using web crawler.
-        Since api return a json message, we can use it to update scoreboard.
-
-        '''
         scoreboard = update()
         scoreboard['Total'] = scoreboard.applymap(
             lambda x: x == 10).sum(axis=1)
@@ -106,8 +111,9 @@ def table_display():
                                ascending=[False, True])
         scoreboard.drop(columns='Total', inplace=True)
         scoreboard.index.name = None
+        scoreboard = scoreboard.applymap(lambda x: icon.get(x, 'help_outline'))
+        return scoreboard.to_html(border=0, max_cols=None, max_rows=None, escape=False)
 
-        return scoreboard.applymap(lambda x: icon.get(x, 'help_outline')).to_html(border=0, max_cols=None, max_rows=None, escape=False)
     return {'render': render, 'generate': generate}
 
 

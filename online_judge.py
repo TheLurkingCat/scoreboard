@@ -10,6 +10,7 @@ from collections import Counter, defaultdict
 from configparser import ConfigParser
 
 import pandas as pd
+from numpy import isnan, nan
 from requests import get
 
 
@@ -103,16 +104,16 @@ class OnlineJudge:
                   'count': '1048576'}
         url = self.api.format('submissions/')
         data = self.get_data(url, params)['submissions']
-        table = pd.DataFrame(columns=[problem_id], dtype='int8')
+        table = pd.DataFrame(columns=[problem_id], dtype='float16')
         for submission in data:
             if submission['verdict_id'] > 4:
                 name = self.user.get(submission['user_id'], None)
                 if name is not None:
-                    try:
-                        table.loc[name, problem_id] = max(
-                            table.loc[name, problem_id], submission['verdict_id'])
-                    except KeyError:
-                        table.loc[name, problem_id] = submission['verdict_id']
+                    if isnan(table[problem_id].get(name, nan)):
+                        table.at[name, problem_id] = submission['verdict_id']
+                    else:
+                        table.at[name, problem_id] = max(
+                            table.at[name, problem_id], submission['verdict_id'])
 
         return table
 
