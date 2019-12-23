@@ -85,7 +85,7 @@ def table_display():
             problem_id = temp[i]['problem_id']
             verdict = temp[i]['verdict_id']
             if verdict > 4 and name is not None and problems.get(problem_id, None) is not None:
-                if isnan(scoreboard[problem_id].get(name, nan)):
+                if isnan(scoreboard.get(problem_id, {}).get(name, nan)):
                     scoreboard.at[name, problem_id] = verdict
                 else:
                     scoreboard.at[name, problem_id] = max(
