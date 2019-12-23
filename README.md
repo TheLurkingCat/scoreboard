@@ -4,8 +4,9 @@
 - Python 3
 
 ## Python package requirements
-- requests
-- pandas
+```bash=
+    pip install -r requirements.txt
+```
 
 ## Configuration
 ```bash=

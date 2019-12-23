@@ -22,12 +22,11 @@ class OnlineJudge:
         cookies: (dict) You need token to access FOJ.
         user: (dict) An user_id to student_id mapping dictionary.
     '''
-    config = ConfigParser()
-    config.read('app.config')
     api = 'https://api.oj.nctu.me/{}'
-    cookies = {'token': config['Authorize']['token']}
 
-    def __init__(self):
+    def __init__(self, config):
+        self.config = config
+        self.cookies = {'token': config['Authorize']['token']}
         if self.validate():
             self.user = self.get_user()
         else:
@@ -42,9 +41,11 @@ class OnlineJudge:
             print(data)
             return False
         print('Authorized')
-        self.config.set('Authorize', 'token', response.cookies['token'][1:-1])
-        with open('app.config', 'w') as cfg:
-            self.config.write(cfg)
+        if isinstance(self.config, ConfigParser):
+            self.config.set('Authorize', 'token',
+                            response.cookies['token'][1:-1])
+            with open('app.config', 'w') as cfg:
+                self.config.write(cfg)
         return True
 
     def get_data(self, url, params=None):
@@ -116,7 +117,3 @@ class OnlineJudge:
                             table.at[name, problem_id], submission['verdict_id'])
 
         return table
-
-
-if __name__ == '__main__':
-    oj = OnlineJudge()
