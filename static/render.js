@@ -3,6 +3,10 @@ $(function () {
         if (v.textContent === "done") {
             v.title = "Accept"
             v.bgColor = "#D4EDC9"
+
+        } else if (v.textContent === 'check') {
+            v.title = "First blood"
+            v.bgColor = "#80ff80"
         } else if (v.textContent[0] === 'h') {
             v.title = "N/A"
             v.bgColor = "#E5E5E5"

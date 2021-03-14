@@ -16,5 +16,5 @@
 
 ## Usage
 ```bash=
-    python main.py
+    python scoreboard.py
 ```

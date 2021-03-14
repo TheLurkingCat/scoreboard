@@ -32,11 +32,16 @@ def generate():
         tasks.append(task)
 
     df_list = loop.run_until_complete(gather(*tasks))
+    z = zip(*df_list)
     scoreboard = reduce(lambda x, y: merge(x, y, left_index=True,
-                                           right_index=True, how='outer'), df_list)
+                                           right_index=True, how='outer'), next(z))
+    first = Series(next(z), index=next(z))
+    for x, y in first.items():
+        scoreboard[x][y] = 11
     with HDFStore('cache.h5') as store:
         store.put('board', scoreboard)
         store.put('last', Series(last))
+        store.put('first', first)
 
 
 def update():
@@ -44,6 +49,7 @@ def update():
     with HDFStore('cache.h5') as store:
         last = store.get('last')[0]
         scoreboard = store.get('board')
+        first = store.get('first')
 
     temp = oj.get_last_submission(8192)
     if temp[0]['id'] == last:
@@ -78,13 +84,19 @@ def update():
             else:
                 scoreboard.at[name, problem_id] = max(
                     scoreboard.at[name, problem_id], verdict)
+            if first[problem_id] != first[problem_id] and verdict == 10:
+                first[problem_id] = name
 
     scoreboard.sort_index(axis=1, inplace=True)
+
+    for x, y in first.items():
+        scoreboard[x][y] = 11
 
     print("Update completed, saving to cache.")
     with HDFStore('cache.h5', mode='w') as store:
         store.put('board', scoreboard)
         store.put('last', Series(temp[0]['id']))
+        store.put('first', first)
     print("Update finished!")
 
     return scoreboard
@@ -93,7 +105,7 @@ def update():
 def render():
     scoreboard = update()
     scoreboard['Total'] = scoreboard.applymap(
-        lambda x: x == 10).sum(axis=1)
+        lambda x: x >= 10).sum(axis=1)
     scoreboard.index.name = 'Student_ID'
     scoreboard.sort_values(by=['Total', 'Student_ID'],
                            inplace=True,
@@ -125,7 +137,7 @@ if __name__ == '__main__':
         config.read('app.config')
     else:
         raise FileNotFoundError('No configuration file found!')
-    set_option('display.max_colwidth', -1)
+    set_option('display.max_colwidth', None)
     loop = get_event_loop()
     oj = OnlineJudge(config)
     param = {
@@ -139,6 +151,7 @@ if __name__ == '__main__':
         8: 'file_copy',
         9: 'clear',
         10: 'done',
+        11: 'check',
         'help_outline': 'help_outline'
     }
     if not isfile('cache.h5'):
@@ -147,4 +160,4 @@ if __name__ == '__main__':
         print("Cache built!")
     else:
         print("Cache found!")
-    app.run()
+    app.run(port=8080)
