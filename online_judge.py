@@ -22,7 +22,7 @@ class OnlineJudge:
         cookies: (dict) You need token to access FOJ.
         user: (dict) An user_id to student_id mapping dictionary.
     '''
-    api = 'https://api.oj.nctu.me/{}'
+    api = 'https://api.oj.nctu.edu.tw/{}'
 
     def __init__(self, config):
         self.config = config
@@ -106,6 +106,7 @@ class OnlineJudge:
         url = self.api.format('submissions/')
         data = self.get_data(url, params)['submissions']
         table = pd.DataFrame(columns=[problem_id], dtype='float16')
+        first = ''
         for submission in data:
             if submission['verdict_id'] > 4:
                 name = self.user.get(submission['user_id'], None)
@@ -115,5 +116,6 @@ class OnlineJudge:
                     else:
                         table.at[name, problem_id] = max(
                             table.at[name, problem_id], submission['verdict_id'])
-
-        return table
+                    if submission['verdict_id'] == 10:
+                        first = name
+        return table, first, problem_id
